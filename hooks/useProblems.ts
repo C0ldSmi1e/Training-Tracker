@@ -142,9 +142,9 @@ const useProblems = (user: User | null | undefined) => {
       }
 
       if (newPool.unsolved.length > 0) {
-        problem = newPool.unsolved[Math.floor(Math.random() * newPool.unsolved.length)];
+        problem = newPool.unsolved[Math.floor(Math.random() * Math.min(20, newPool.unsolved.length))];
       } else {
-        problem = newPool.solved[Math.floor(Math.random() * newPool.solved.length)];
+        problem = newPool.solved[Math.floor(Math.random() * Math.min(20, newPool.solved.length))];
       }
       return {
         ...problem,
