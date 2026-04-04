@@ -16,7 +16,7 @@ const useBounds = () => {
     firstInput,
     secondInput,
     onFirstInputChange,
-    onSecondInputChange
+    onSecondInputChange,
   };
 };
 

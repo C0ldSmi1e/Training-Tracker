@@ -26,12 +26,15 @@ const Home = () => {
         <CardContent className="pt-6 space-y-6">
           <Card>
             <CardContent className="pt-6">
-              {user ? 
+              {user ? (
                 <Profile
                   user={user}
                   logout={logout}
                   changeUserLevel={changeUserLevel}
-                /> : <Settings />}
+                />
+              ) : (
+                <Settings />
+              )}
             </CardContent>
           </Card>
           <Separator className="my-4" />

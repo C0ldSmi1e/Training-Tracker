@@ -1,5 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+
+const calculateTime = (startTime: number, endTime: number) => {
+  const now = Date.now();
+  if (now < startTime) return { timeLeft: startTime - now, isStarted: false };
+  if (now < endTime) return { timeLeft: endTime - now, isStarted: true };
+  return { timeLeft: 0, isStarted: true };
+};
 
 const CountDown = ({
   startTime,
@@ -8,30 +15,22 @@ const CountDown = ({
   startTime: number;
   endTime: number;
 }) => {
-  const [timeLeft, setTimeLeft] = useState<number>(0);
-  const [isStarted, setIsStarted] = useState<boolean>(false);
+  const initial = useMemo(
+    () => calculateTime(startTime, endTime),
+    [startTime, endTime],
+  );
+  const [timeLeft, setTimeLeft] = useState<number>(initial.timeLeft);
+  const [isStarted, setIsStarted] = useState<boolean>(initial.isStarted);
 
   useEffect(() => {
-    const calculateTimeLeft = () => {
-      const now = Date.now();
-      if (now < startTime) {
-        setIsStarted(false);
-        return startTime - now;
-      }
-      if (now < endTime) {
-        setIsStarted(true);
-        return endTime - now;
-      }
-      setIsStarted(true);
-      return 0;
-    };
-
-    setTimeLeft(calculateTimeLeft());
-
     const timer = setInterval(() => {
-      const remaining = calculateTimeLeft();
+      const { timeLeft: remaining, isStarted: started } = calculateTime(
+        startTime,
+        endTime,
+      );
       setTimeLeft(remaining);
-      
+      setIsStarted(started);
+
       if (remaining <= 0) {
         clearInterval(timer);
       }

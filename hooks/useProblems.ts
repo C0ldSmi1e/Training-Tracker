@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import useSWR from "swr";
 import { CodeforcesProblem, ProblemTag } from "@/types/Codeforces";
 import getAllProblems from "@/utils/codeforces/getAllProblems";
 import getSolvedProblems from "@/utils/codeforces/getSolvedProblems";
 import { User } from "@/types/User";
-
 
 const PROBLEMS_CACHE_KEY = "codeforces-all-problems";
 const SOLVED_PROBLEMS_CACHE_KEY = (handle: string) =>
@@ -12,14 +11,11 @@ const SOLVED_PROBLEMS_CACHE_KEY = (handle: string) =>
 
 const useProblems = (user: User | null | undefined) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [problemPools, setProblemPools] = useState<{
-    rating: number,
-    solved: CodeforcesProblem[],
-    unsolved: CodeforcesProblem[]
-  }[]>([]);
 
   // Fetch all problems
-  const { data: allProblems, isLoading: isLoadingAll } = useSWR<CodeforcesProblem[]>(
+  const { data: allProblems, isLoading: isLoadingAll } = useSWR<
+    CodeforcesProblem[]
+  >(
     PROBLEMS_CACHE_KEY,
     async () => {
       const res = await getAllProblems();
@@ -32,14 +28,14 @@ const useProblems = (user: User | null | undefined) => {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       dedupingInterval: 3600000,
-    }
+    },
   );
 
   // Fetch solved problems only if we have a user
   const {
     data: solvedProblems,
     isLoading: isLoadingSolved,
-    mutate: mutateSolved
+    mutate: mutateSolved,
   } = useSWR<CodeforcesProblem[]>(
     user ? SOLVED_PROBLEMS_CACHE_KEY(user.codeforcesHandle) : null,
     async () => {
@@ -55,38 +51,38 @@ const useProblems = (user: User | null | undefined) => {
     {
       revalidateOnFocus: false,
       dedupingInterval: 300000,
-    }
+    },
   );
 
-  // Update problem pools when problems data changes
-  useEffect(() => {
+  // Derive problem pools from data
+  const problemPools = useMemo(() => {
     if (!user || isLoadingAll) {
-      return;
+      return [];
     }
-  
+
     const ratings = [
       parseInt(user.level.P1),
       parseInt(user.level.P2),
       parseInt(user.level.P3),
       parseInt(user.level.P4),
     ];
-  
+
     const solvedProblemIds = new Set(
-      solvedProblems?.map((p) => `${p.contestId}_${p.index}`) ?? []
+      solvedProblems?.map((p) => `${p.contestId}_${p.index}`) ?? [],
     );
 
-  
     const unsolvedProblems = allProblems?.filter(
-      (problem) => !solvedProblemIds.has(`${problem.contestId}_${problem.index}`)
+      (problem) =>
+        !solvedProblemIds.has(`${problem.contestId}_${problem.index}`),
     );
-  
-    const newProblemPools = ratings.map((rating) => ({
-      rating,
-      solved: solvedProblems?.filter((problem) => problem.rating === rating) ?? [],
-      unsolved: unsolvedProblems?.filter((problem) => problem.rating === rating) ?? [],
-    }));
 
-    setProblemPools(newProblemPools);
+    return ratings.map((rating) => ({
+      rating,
+      solved:
+        solvedProblems?.filter((problem) => problem.rating === rating) ?? [],
+      unsolved:
+        unsolvedProblems?.filter((problem) => problem.rating === rating) ?? [],
+    }));
   }, [user, allProblems, solvedProblems, isLoadingAll]);
 
   const refreshSolvedProblems = async () => {
@@ -98,13 +94,16 @@ const useProblems = (user: User | null | undefined) => {
 
     try {
       // Await the mutation and capture the updated data
-      const updatedData = await mutateSolved(async () => {
-        const res = await getSolvedProblems(user);
-        if (!res.success) {
-          throw new Error("Failed to fetch solved problems");
-        }
-        return res.data;
-      }, { revalidate: true });
+      const updatedData = await mutateSolved(
+        async () => {
+          const res = await getSolvedProblems(user);
+          if (!res.success) {
+            throw new Error("Failed to fetch solved problems");
+          }
+          return res.data;
+        },
+        { revalidate: true },
+      );
 
       setIsLoading(false);
       // Return the updated data so caller can use it immediately
@@ -129,11 +128,11 @@ const useProblems = (user: User | null | undefined) => {
       if (tags.length > 0) {
         newPool = {
           ...pool,
-          solved: pool.solved.filter(
-            (problem) => tags.some((tag: ProblemTag) => problem.tags.includes(tag.value))
+          solved: pool.solved.filter((problem) =>
+            tags.some((tag: ProblemTag) => problem.tags.includes(tag.value)),
           ),
-          unsolved: pool.unsolved.filter(
-            (problem) => tags.some((tag: ProblemTag) => problem.tags.includes(tag.value))
+          unsolved: pool.unsolved.filter((problem) =>
+            tags.some((tag: ProblemTag) => problem.tags.includes(tag.value)),
           ),
         };
       }
@@ -152,22 +151,22 @@ const useProblems = (user: User | null | undefined) => {
 
       newPool2.solved.inrange = newPool.solved.filter((problem) => {
         const id = problem.contestId;
-        return (id >= lb && id <= ub);
+        return id >= lb && id <= ub;
       });
       newPool2.solved.outsiderange = newPool.solved.filter((problem) => {
         const id = problem.contestId;
-        return (id < lb || id > ub);
+        return id < lb || id > ub;
       });
 
       newPool2.unsolved.inrange = newPool.unsolved.filter((problem) => {
         const id = problem.contestId;
-        return (id >= lb && id <= ub);
+        return id >= lb && id <= ub;
       });
       newPool2.unsolved.outsiderange = newPool.unsolved.filter((problem) => {
         const id = problem.contestId;
-        return (id < lb || id > ub);
+        return id < lb || id > ub;
       });
-      
+
       const chooseFrom = (problist: CodeforcesProblem[]) => {
         let tmp = problist[Math.floor(Math.random() * problist.length)];
         let str = `${tmp.contestId}_${tmp.index}`;
@@ -176,18 +175,18 @@ const useProblems = (user: User | null | undefined) => {
           str = `${tmp.contestId}_${tmp.index}`;
         }
         alreadyChosen.add(str);
-        
+
         return tmp;
       };
 
       if (newPool.unsolved.length > 0) {
-        if(newPool2.unsolved.inrange.length > 0) {
+        if (newPool2.unsolved.inrange.length > 0) {
           problem = chooseFrom(newPool2.unsolved.inrange);
         } else {
           problem = chooseFrom(newPool2.unsolved.outsiderange);
         }
       } else {
-        if(newPool2.solved.inrange.length > 0) {
+        if (newPool2.solved.inrange.length > 0) {
           problem = chooseFrom(newPool2.solved.inrange);
         } else {
           problem = chooseFrom(newPool2.solved.outsiderange);
@@ -204,7 +203,6 @@ const useProblems = (user: User | null | undefined) => {
     return newProblems;
   };
 
-
   return {
     allProblems: allProblems ?? [],
     solvedProblems: solvedProblems ?? [],
@@ -216,4 +214,3 @@ const useProblems = (user: User | null | undefined) => {
 };
 
 export default useProblems;
-

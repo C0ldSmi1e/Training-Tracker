@@ -23,7 +23,7 @@ const Statistics = () => {
   const onClearHistory = () => {
     if (
       confirm(
-        "Are you sure to clear the history? This action cannot be undone."
+        "Are you sure to clear the history? This action cannot be undone.",
       )
     ) {
       clearHistory();
@@ -57,9 +57,7 @@ const Statistics = () => {
               >
                 JSON
               </DropdownMenuItem>
-              <DropdownMenuItem disabled>
-                CSV
-              </DropdownMenuItem>
+              <DropdownMenuItem disabled>CSV</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button variant="destructive" onClick={onClearHistory}>
@@ -76,7 +74,9 @@ const Statistics = () => {
             <History history={history} deleteTraining={deleteTraining} />
           </>
         ) : (
-          <div className="text-center py-4 text-muted-foreground">No training history</div>
+          <div className="text-center py-4 text-muted-foreground">
+            No training history
+          </div>
         )}
       </CardContent>
     </Card>

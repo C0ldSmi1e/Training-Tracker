@@ -41,7 +41,10 @@ const ProgressChart = ({ history }: { history: Training[] }) => {
             <Tooltip
               labelFormatter={formatDate}
               formatter={(value: number) => [`${value}`, "Performance"]}
-              contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))" }}
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
+                borderColor: "hsl(var(--border))",
+              }}
             />
             <Line
               type="monotone"

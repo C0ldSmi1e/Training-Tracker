@@ -18,15 +18,16 @@ const getStoredUser = () => {
 };
 
 const useUser = () => {
-  const { data: user, isLoading, mutate, error } = useSWR<User | null>(
-    USER_CACHE_KEY,
-    getStoredUser,
-    {
-      fallbackData: getStoredUser(),
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false
-    }
-  );
+  const {
+    data: user,
+    isLoading,
+    mutate,
+    error,
+  } = useSWR<User | null>(USER_CACHE_KEY, getStoredUser, {
+    fallbackData: getStoredUser(),
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
 
   useEffect(() => {
     const fetchLatestUser = async () => {
@@ -34,10 +35,7 @@ const useUser = () => {
       const res = await getUser(user.codeforcesHandle);
       if (!res.success) return;
       const profile = res.data;
-      if (
-        profile.rating !== user.rating ||
-        profile.avatar !== user.avatar
-      ) {
+      if (profile.rating !== user.rating || profile.avatar !== user.avatar) {
         const newUser = {
           codeforcesHandle: profile.handle as string,
           avatar: profile.avatar as string,
@@ -48,6 +46,7 @@ const useUser = () => {
       }
     };
     fetchLatestUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.codeforcesHandle]);
 
   useEffect(() => {
@@ -62,7 +61,7 @@ const useUser = () => {
       if (!res.success) {
         throw new Error("Failed to fetch user");
       }
-      
+
       const profile = res.data;
       const newUser = {
         codeforcesHandle: profile.handle as string,
@@ -70,7 +69,7 @@ const useUser = () => {
         rating: profile.rating as number,
         level: getLevelByRating(profile.rating),
       };
-      
+
       await mutate(newUser, { revalidate: false });
       return SuccessResponse("User updated successfully");
     } catch (error) {

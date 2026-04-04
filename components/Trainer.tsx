@@ -19,7 +19,9 @@ const ProblemLink = ({
   const getSolvedStatus = () => {
     if (!isTraining) return "";
     if (problem.solvedTime && startTime) {
-      const solvedMinutes = Math.floor((problem.solvedTime - startTime) / 60000);
+      const solvedMinutes = Math.floor(
+        (problem.solvedTime - startTime) / 60000,
+      );
       return `✅ ${solvedMinutes}m `;
     }
     return "⌛ ";
@@ -78,7 +80,10 @@ const Trainer = ({
     <Card>
       <CardContent className="pt-6 space-y-4">
         <div className="flex flex-wrap justify-between gap-4">
-          {(isTraining && training?.problems ? training.problems : problems)?.map((problem) => (
+          {(isTraining && training?.problems
+            ? training.problems
+            : problems
+          )?.map((problem) => (
             <ProblemLink
               key={`${problem.contestId}-${problem.index}`}
               problem={problem}
@@ -96,15 +101,13 @@ const Trainer = ({
         <div className="flex justify-center gap-4">
           {!isTraining ? (
             <>
-              <Button
-                onClick={() => generateProblems(selectedTags,lb,ub)}
-              >
-                {problems && problems.length > 0 ? "Regenerate" : "Generate Problems"}
+              <Button onClick={() => generateProblems(selectedTags, lb, ub)}>
+                {problems && problems.length > 0
+                  ? "Regenerate"
+                  : "Generate Problems"}
               </Button>
               {problems && problems.length > 0 && (
-                <Button onClick={startTraining}>
-                  Start
-                </Button>
+                <Button onClick={startTraining}>Start</Button>
               )}
             </>
           ) : (
@@ -115,9 +118,7 @@ const Trainer = ({
                   endTime={training.endTime}
                 />
                 <div className="flex gap-4">
-                  <Button onClick={onFinishTraining}>
-                    Finish
-                  </Button>
+                  <Button onClick={onFinishTraining}>Finish</Button>
                   <Button variant="destructive" onClick={onStopTraining}>
                     Stop
                   </Button>

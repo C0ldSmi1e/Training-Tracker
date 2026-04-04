@@ -20,7 +20,9 @@ const Profile = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [newLevelNumber, setNewLevelNumber] = useState<number>(+user?.level.level);
+  const [newLevelNumber, setNewLevelNumber] = useState<number>(
+    +user?.level.level,
+  );
 
   const onSave = async () => {
     setIsLoading(true);
@@ -33,7 +35,9 @@ const Profile = ({
     <div className="flex flex-col md:flex-row items-center justify-center gap-6">
       <Avatar className="w-24 h-24 md:w-40 md:h-40">
         <AvatarImage src={user?.avatar || "/default-avatar.jpg"} alt="avatar" />
-        <AvatarFallback>{user?.codeforcesHandle?.slice(0, 2).toUpperCase()}</AvatarFallback>
+        <AvatarFallback>
+          {user?.codeforcesHandle?.slice(0, 2).toUpperCase()}
+        </AvatarFallback>
       </Avatar>
       <div className="flex flex-col items-center md:items-start justify-center gap-2">
         <div className="text-lg">
@@ -58,8 +62,11 @@ const Profile = ({
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="font-bold">Level:</span>{" "} {user?.level.level}
-              <LucideEdit className="w-4 h-4 cursor-pointer" onClick={() => setIsEditing(true)} />
+              <span className="font-bold">Level:</span> {user?.level.level}
+              <LucideEdit
+                className="w-4 h-4 cursor-pointer"
+                onClick={() => setIsEditing(true)}
+              />
             </div>
           )}
         </div>

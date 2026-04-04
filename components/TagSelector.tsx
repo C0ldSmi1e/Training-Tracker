@@ -32,11 +32,7 @@ const TagSelector = ({
           ))}
         </div>
       </ScrollArea>
-      <Button
-        variant="destructive"
-        size="sm"
-        onClick={onClearTags}
-      >
+      <Button variant="destructive" size="sm" onClick={onClearTags}>
         Clear All
       </Button>
     </div>

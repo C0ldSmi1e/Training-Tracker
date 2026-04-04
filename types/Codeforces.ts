@@ -90,4 +90,3 @@ type ProblemTag = {
 };
 
 export type { CodeforcesProblem, CodeforcesSubmission, ProblemTag };
-

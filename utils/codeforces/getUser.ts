@@ -3,7 +3,7 @@ import { SuccessResponse, ErrorResponse } from "@/types/Response";
 const getUser = async (codeforcesHandle: string) => {
   try {
     const res = await fetch(
-      `https://codeforces.com/api/user.info?handles=${codeforcesHandle}`
+      `https://codeforces.com/api/user.info?handles=${codeforcesHandle}`,
     );
     const data = await res.json();
     if (data.status === "OK") {

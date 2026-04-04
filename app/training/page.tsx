@@ -28,11 +28,8 @@ const Training = () => {
     finishTraining,
     generateProblems,
   } = useTraining();
-  const { firstInput,
-    secondInput,
-    onFirstInputChange,
-    onSecondInputChange
-  } = useBounds();
+  const { firstInput, secondInput, onFirstInputChange, onSecondInputChange } =
+    useBounds();
   const [showRatings, setShowRatings] = useState(false);
 
   if (isLoading) {
@@ -46,13 +43,22 @@ const Training = () => {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold">Let&apos;s Practice!</CardTitle>
+        <CardTitle className="text-2xl font-bold">
+          Let&apos;s Practice!
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex flex-col md:flex-row justify-between gap-4">
-          <div><span className="font-bold">Level:</span> {user?.level.level}</div>
-          <div><span className="font-bold">Performance:</span> {user?.level.Performance}</div>
-          <div><span className="font-bold">Time:</span> {user?.level.time} minutes</div>
+          <div>
+            <span className="font-bold">Level:</span> {user?.level.level}
+          </div>
+          <div>
+            <span className="font-bold">Performance:</span>{" "}
+            {user?.level.Performance}
+          </div>
+          <div>
+            <span className="font-bold">Time:</span> {user?.level.time} minutes
+          </div>
         </div>
         <TagSelector
           allTags={allTags}
@@ -66,12 +72,15 @@ const Training = () => {
               variant="outline"
               size="sm"
               onClick={() => setShowRatings(!showRatings)}
-              className="w-fit">
+              className="w-fit"
+            >
               {showRatings ? "Hide Ratings" : "Show Ratings"}
             </Button>
-            <Textboxpair onFirstInputChange={onFirstInputChange} onSecondInputChange={onSecondInputChange}></Textboxpair>
+            <Textboxpair
+              onFirstInputChange={onFirstInputChange}
+              onSecondInputChange={onSecondInputChange}
+            ></Textboxpair>
           </div>
-
 
           <div className="flex flex-wrap gap-4 p-4 rounded-lg justify-between">
             <div>

@@ -12,11 +12,7 @@ const TRAINING_STORAGE_KEY = "training-tracker-training";
 
 const useTraining = () => {
   const router = useRouter();
-  const {
-    user,
-    isLoading: isUserLoading,
-    updateUserLevel,
-  } = useUser();
+  const { user, isLoading: isUserLoading, updateUserLevel } = useUser();
   const {
     solvedProblems,
     isLoading: isProblemsLoading,
@@ -26,28 +22,36 @@ const useTraining = () => {
   const { addTraining } = useHistory();
   const { addUpsolvedProblems } = useUpsolvedProblems();
 
-
   const [problems, setProblems] = useState<TrainingProblem[]>([]);
-  const [training, setTraining] = useState<Training | null>(null);
+  const [training, setTraining] = useState<Training | null>(() => {
+    try {
+      const stored = localStorage.getItem(TRAINING_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [isTraining, setIsTraining] = useState(false);
 
-  const timerRef = useRef<NodeJS.Timeout>();
+  const timerRef = useRef<NodeJS.Timeout>(undefined);
 
   const updateProblemStatus = useCallback(() => {
     const solvedProblemIds = new Set(
-      solvedProblems.map((p) => `${p.contestId}_${p.index}`)
+      solvedProblems.map((p) => `${p.contestId}_${p.index}`),
     );
 
-    setTraining(prev => {
+    setTraining((prev) => {
       if (!prev) {
         return null;
       }
-      
-      const updatedProblems = prev.problems.map(problem => ({
+
+      const updatedProblems = prev.problems.map((problem) => ({
         ...problem,
-        solvedTime: solvedProblemIds.has(`${problem.contestId}_${problem.index}`)
-          ? problem.solvedTime ?? new Date().getTime()
-          : problem.solvedTime
+        solvedTime: solvedProblemIds.has(
+          `${problem.contestId}_${problem.index}`,
+        )
+          ? (problem.solvedTime ?? new Date().getTime())
+          : problem.solvedTime,
       }));
 
       // Only update if there are changes
@@ -57,10 +61,13 @@ const useTraining = () => {
 
       const updatedTraining = {
         ...prev,
-        problems: updatedProblems
+        problems: updatedProblems,
       };
 
-      localStorage.setItem(TRAINING_STORAGE_KEY, JSON.stringify(updatedTraining));
+      localStorage.setItem(
+        TRAINING_STORAGE_KEY,
+        JSON.stringify(updatedTraining),
+      );
       return updatedTraining;
     });
   }, [solvedProblems]);
@@ -73,7 +80,7 @@ const useTraining = () => {
   const finishTraining = useCallback(async () => {
     // Immediately set training state to false to prevent any race conditions
     setIsTraining(false);
-    
+
     // Clear any existing timer first
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -82,7 +89,7 @@ const useTraining = () => {
 
     // Capture current training value before clearing state
     const currentTraining = training;
-    
+
     // Clear all training-related states immediately
     setProblems([]);
     setTraining(null);
@@ -100,15 +107,15 @@ const useTraining = () => {
     }
 
     const solvedProblemIds = new Set(
-      latestSolvedProblems.map((p) => `${p.contestId}_${p.index}`)
+      latestSolvedProblems.map((p) => `${p.contestId}_${p.index}`),
     );
 
-    const updatedProblems = currentTraining.problems.map(problem => ({
+    const updatedProblems = currentTraining.problems.map((problem) => ({
       ...problem,
       solvedTime: solvedProblemIds.has(`${problem.contestId}_${problem.index}`)
-        ? problem.solvedTime ?? new Date().getTime()
-        : problem.solvedTime
-    }));  
+        ? (problem.solvedTime ?? new Date().getTime())
+        : problem.solvedTime,
+    }));
 
     addTraining({ ...currentTraining, problems: updatedProblems });
 
@@ -118,12 +125,18 @@ const useTraining = () => {
     updateUserLevel({ delta });
 
     // Add unsolved problems to upsolved problems list
-    const unsolvedProblems = updatedProblems.filter(p => !p.solvedTime);
+    const unsolvedProblems = updatedProblems.filter((p) => !p.solvedTime);
     addUpsolvedProblems(unsolvedProblems);
 
     router.push("/statistics");
-
-  }, [training, addTraining, router, refreshSolvedProblems, updateUserLevel, addUpsolvedProblems]);
+  }, [
+    training,
+    addTraining,
+    router,
+    refreshSolvedProblems,
+    updateUserLevel,
+    addUpsolvedProblems,
+  ]);
 
   // Redirect if no user
   useEffect(() => {
@@ -132,21 +145,11 @@ const useTraining = () => {
     }
   }, [user, isUserLoading, router]);
 
-  // Load training from localStorage
-  useEffect(() => {
-    const localTraining = localStorage.getItem(TRAINING_STORAGE_KEY);
-    if (localTraining) {
-      const parsed = JSON.parse(localTraining);
-      setTraining(parsed);
-    }
-  }, []);
-
-
-
-  // Update training in localStorage
+  // Manage training timer and localStorage sync
+  // These effects legitimately call setState in response to timer/external state changes
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!training) {
-      // Ensure cleanup when training becomes null
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = undefined;
@@ -158,7 +161,6 @@ const useTraining = () => {
     const now = new Date().getTime();
     const timeLeft = training.endTime - now;
 
-    // If training has expired, finish it
     if (timeLeft <= 0) {
       finishTraining();
       return;
@@ -166,12 +168,10 @@ const useTraining = () => {
 
     setIsTraining(now <= training.endTime);
 
-    // Store timer ID in the ref
     timerRef.current = setTimeout(() => {
       finishTraining();
     }, timeLeft);
 
-    // Clean up timer when training changes or component unmounts
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
@@ -180,23 +180,19 @@ const useTraining = () => {
     };
   }, [training, finishTraining]);
 
-  // if all problems are solved, finish training
   useEffect(() => {
     if (training && training.problems.every((p) => p.solvedTime)) {
       finishTraining();
     }
   }, [training, finishTraining]);
 
-  // Update training problems status whenever solvedProblems changes
   useEffect(() => {
     if (!isTraining || !training || !solvedProblems) {
       return;
     }
-
     updateProblemStatus();
   }, [isTraining, training, solvedProblems, updateProblemStatus]);
-
-
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const startTraining = () => {
     if (!user) {
