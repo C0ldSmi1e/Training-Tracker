@@ -20,12 +20,19 @@ const Settings = () => {
       return;
     }
 
+    setErrorMessage("");
     setIsUpdating(true);
     const res = await updateUser(codeforcesHandle);
     if (!res.success) {
       setErrorMessage(res.error);
     }
     setIsUpdating(false);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      onUpdateUser();
+    }
   };
 
   return (
@@ -36,6 +43,7 @@ const Settings = () => {
           className="w-full md:w-2/3"
           value={codeforcesHandle}
           onChange={onChangeCodeforcesHandle}
+          onKeyDown={onKeyDown}
           placeholder="Please enter your Codeforces handle"
         />
         <Button

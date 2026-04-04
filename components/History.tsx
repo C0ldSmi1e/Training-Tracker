@@ -52,8 +52,8 @@ const History = ({
           <TableRow>
             <TableHead>Date</TableHead>
             <TableHead>Level</TableHead>
-            {history[0].problems.map((_, index) => (
-              <TableHead key={index}>P{index + 1}</TableHead>
+            {history[0]?.problems.map((_, index) => (
+              <TableHead key={`p-${index}`}>P{index + 1}</TableHead>
             ))}
             <TableHead>Performance</TableHead>
             <TableHead></TableHead>
