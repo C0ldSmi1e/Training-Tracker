@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { TrainingProblem } from "@/types/TrainingProblem";
 import { SuccessResponse, ErrorResponse } from "@/types/Response";
@@ -17,7 +18,8 @@ const getStoredUpsolvedProblems = () => {
 };
 
 const useUpsolvedProblems = () => {
-  const { user } = useUser();
+  const router = useRouter();
+  const { user, isLoading: isUserLoading } = useUser();
   const {
     isLoading: isProblemsLoading,
     refreshSolvedProblems,
@@ -27,6 +29,13 @@ const useUpsolvedProblems = () => {
     UPSOLVED_PROBLEMS_CACHE_KEY,
     getStoredUpsolvedProblems,
   );
+
+  // Redirect if no user
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push("/");
+    }
+  }, [user, isUserLoading, router]);
 
   // make sure the data is an array
   const upsolvedProblems = useMemo(() => data ?? [], [data]);
@@ -112,7 +121,7 @@ const useUpsolvedProblems = () => {
 
   return {
     upsolvedProblems,
-    isLoading: isProblemsLoading || isLoading,
+    isLoading: isUserLoading || isProblemsLoading || isLoading,
     error,
     addUpsolvedProblems,
     deleteUpsolvedProblem,
