@@ -115,89 +115,57 @@ const useProblems = (user: User | null | undefined) => {
   };
 
   const getRandomProblems = (tags: ProblemTag[], lb: number, ub: number) => {
-    if (!user || problemPools.length === 0) {
+    // Require both fetches to have succeeded: without solvedProblems the
+    // pools would misclassify every solved problem as unsolved.
+    // Returns undefined when data isn't ready, null when no problems match.
+    if (!user || !allProblems || !solvedProblems || problemPools.length === 0) {
       return;
     }
 
     setIsLoading(true);
     const alreadyChosen = new Set<string>();
-    const newProblems = problemPools.map((pool) => {
-      let problem = null;
+    const newProblems = [];
 
-      let newPool = pool;
+    for (const pool of problemPools) {
+      // Only ever draw from unsolved problems — picking a previously solved
+      // problem would be instantly re-counted as solved on the next refresh.
+      let unsolved = pool.unsolved;
       if (tags.length > 0) {
-        newPool = {
-          ...pool,
-          solved: pool.solved.filter((problem) =>
-            tags.some((tag: ProblemTag) => problem.tags.includes(tag.value)),
-          ),
-          unsolved: pool.unsolved.filter((problem) =>
-            tags.some((tag: ProblemTag) => problem.tags.includes(tag.value)),
-          ),
-        };
+        unsolved = unsolved.filter((problem) =>
+          tags.some((tag: ProblemTag) => problem.tags.includes(tag.value)),
+        );
       }
 
-      const newPool2 = {
-        rating: newPool.rating,
-        solved: {
-          inrange: [] as CodeforcesProblem[],
-          outsiderange: [] as CodeforcesProblem[],
-        },
-        unsolved: {
-          inrange: [] as CodeforcesProblem[],
-          outsiderange: [] as CodeforcesProblem[],
-        },
-      };
+      // Draw without replacement: exclude problems already chosen for
+      // previous slots so we never loop retrying duplicates.
+      const available = unsolved.filter(
+        (problem) =>
+          !alreadyChosen.has(`${problem.contestId}_${problem.index}`),
+      );
 
-      newPool2.solved.inrange = newPool.solved.filter((problem) => {
+      const inrange = available.filter((problem) => {
         const id = problem.contestId;
         return id >= lb && id <= ub;
       });
-      newPool2.solved.outsiderange = newPool.solved.filter((problem) => {
-        const id = problem.contestId;
-        return id < lb || id > ub;
-      });
 
-      newPool2.unsolved.inrange = newPool.unsolved.filter((problem) => {
-        const id = problem.contestId;
-        return id >= lb && id <= ub;
-      });
-      newPool2.unsolved.outsiderange = newPool.unsolved.filter((problem) => {
-        const id = problem.contestId;
-        return id < lb || id > ub;
-      });
+      // Prefer problems inside the contest range, fall back to the rest
+      const candidates = inrange.length > 0 ? inrange : available;
 
-      const chooseFrom = (problist: CodeforcesProblem[]) => {
-        let tmp = problist[Math.floor(Math.random() * problist.length)];
-        let str = `${tmp.contestId}_${tmp.index}`;
-        while (alreadyChosen.has(str)) {
-          tmp = problist[Math.floor(Math.random() * problist.length)];
-          str = `${tmp.contestId}_${tmp.index}`;
-        }
-        alreadyChosen.add(str);
-
-        return tmp;
-      };
-
-      if (newPool.unsolved.length > 0) {
-        if (newPool2.unsolved.inrange.length > 0) {
-          problem = chooseFrom(newPool2.unsolved.inrange);
-        } else {
-          problem = chooseFrom(newPool2.unsolved.outsiderange);
-        }
-      } else {
-        if (newPool2.solved.inrange.length > 0) {
-          problem = chooseFrom(newPool2.solved.inrange);
-        } else {
-          problem = chooseFrom(newPool2.solved.outsiderange);
-        }
+      if (candidates.length === 0) {
+        // This slot cannot be filled — fail the whole generation
+        setIsLoading(false);
+        return null;
       }
-      return {
+
+      const problem = candidates[Math.floor(Math.random() * candidates.length)];
+      alreadyChosen.add(`${problem.contestId}_${problem.index}`);
+
+      newProblems.push({
         ...problem,
         url: `https://codeforces.com/contest/${problem.contestId}/problem/${problem.index}`,
         solvedTime: null,
-      };
-    });
+      });
+    }
 
     setIsLoading(false);
     return newProblems;

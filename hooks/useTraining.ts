@@ -224,6 +224,14 @@ const useTraining = () => {
     const newProblems = getRandomProblems(tags, lb, ub);
     if (newProblems) {
       setProblems(newProblems);
+    } else if (newProblems === null) {
+      // null means a slot could not be filled from the unsolved problems
+      // (undefined just means data hasn't loaded yet). Clear any previous
+      // list so the user can't start a training that ignores their filters.
+      setProblems([]);
+      alert(
+        "No problems match these filters — try widening tags or the contest range.",
+      );
     }
   };
 
