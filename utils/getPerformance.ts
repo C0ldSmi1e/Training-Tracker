@@ -1,6 +1,12 @@
 import { Training } from "@/types/Training";
 
 const getPerformance = (training: Training) => {
+  // The formula below assumes exactly 4 problems (the invariant for every
+  // training); return a neutral value for malformed data instead of NaN
+  if (training.problems.length !== 4) {
+    return 0;
+  }
+
   const level = parseInt(training.level.level);
 
   // Extract problem ratings (EFGH columns)
