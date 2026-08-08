@@ -104,10 +104,14 @@ const useUpsolvedProblems = () => {
 
   const deleteUpsolvedProblem = async (problem: TrainingProblem) => {
     try {
-      const newUpsolvedProblems = upsolvedProblems?.filter(
-        (p) => p.contestId !== problem.contestId && p.index !== problem.index,
+      const newUpsolvedProblems = await mutate(
+        (current) =>
+          (current ?? []).filter(
+            (p) =>
+              p.contestId !== problem.contestId || p.index !== problem.index,
+          ),
+        { revalidate: false },
       );
-      await mutate(newUpsolvedProblems, { revalidate: false });
       return SuccessResponse(newUpsolvedProblems);
     } catch (error) {
       return ErrorResponse(error as string);
