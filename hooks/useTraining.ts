@@ -205,7 +205,6 @@ const useTraining = () => {
       return;
     }
 
-    // Will start in 30 seconds
     const startTime = new Date().getTime() + TRAINING_START_DELAY_MS;
 
     const endTime = startTime + parseInt(user.level.time) * 60000;
