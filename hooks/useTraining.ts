@@ -9,6 +9,7 @@ import useHistory from "@/hooks/useHistory";
 import useUpsolvedProblems from "@/hooks/useUpsolvedProblems";
 
 const TRAINING_STORAGE_KEY = "training-tracker-training";
+const TRAINING_START_DELAY_MS = 30_000;
 
 const useTraining = () => {
   const router = useRouter();
@@ -181,7 +182,11 @@ const useTraining = () => {
   }, [training, finishTraining]);
 
   useEffect(() => {
-    if (training && training.problems.every((p) => p.solvedTime)) {
+    if (
+      training &&
+      training.problems.length > 0 &&
+      training.problems.every((p) => p.solvedTime)
+    ) {
       finishTraining();
     }
   }, [training, finishTraining]);
@@ -201,7 +206,7 @@ const useTraining = () => {
     }
 
     // Will start in 30 seconds
-    const startTime = new Date().getTime() + 10000;
+    const startTime = new Date().getTime() + TRAINING_START_DELAY_MS;
 
     const endTime = startTime + parseInt(user.level.time) * 60000;
 

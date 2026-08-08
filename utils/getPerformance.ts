@@ -6,6 +6,12 @@ const getPerformance = (training: Training) => {
   // Extract problem ratings (EFGH columns)
   const ratings = training.problems.map((p) => p.rating);
 
+  // The formula below assumes exactly 4 problems; guard against malformed
+  // trainings (e.g. corrupted localStorage) instead of throwing/returning NaN
+  if (training.problems.length !== 4) {
+    return training.problems.length > 0 ? ratings[0] - 50 : 0;
+  }
+
   // Calculate solved times (IJKL columns)
   // Subtract startTime to get relative solving time
   const solvedTimes = training.problems.map((p) =>
