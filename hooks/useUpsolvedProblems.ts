@@ -5,6 +5,7 @@ import { TrainingProblem } from "@/types/TrainingProblem";
 import { SuccessResponse, ErrorResponse } from "@/types/Response";
 import useUser from "@/hooks/useUser";
 import useProblems from "@/hooks/useProblems";
+import { getProblemId } from "@/utils/codeforces/getSolvedProblems";
 
 const UPSOLVED_PROBLEMS_CACHE_KEY = "training-tracker-upsolved-problems";
 
@@ -24,6 +25,7 @@ const useUpsolvedProblems = () => {
     isLoading: isProblemsLoading,
     refreshSolvedProblems,
     solvedProblems,
+    solvedAtByProblemId,
   } = useProblems(user);
   const { data, isLoading, error, mutate } = useSWR<TrainingProblem[]>(
     UPSOLVED_PROBLEMS_CACHE_KEY,
@@ -45,13 +47,11 @@ const useUpsolvedProblems = () => {
       return;
     }
     const newUpsolvedProblems = upsolvedProblems.map((problem) => {
-      const solvedProblem = solvedProblems.find(
-        (p) => p.contestId === problem.contestId && p.index === problem.index,
-      );
-      if (solvedProblem && !problem.solvedTime) {
+      const solvedAt = solvedAtByProblemId.get(getProblemId(problem));
+      if (solvedAt !== undefined && !problem.solvedTime) {
         return {
           ...problem,
-          solvedTime: new Date().getTime(),
+          solvedTime: solvedAt,
         };
       }
       return problem;
@@ -62,7 +62,7 @@ const useUpsolvedProblems = () => {
     ) {
       await mutate(newUpsolvedProblems, { revalidate: false });
     }
-  }, [upsolvedProblems, solvedProblems, mutate]);
+  }, [upsolvedProblems, solvedAtByProblemId, mutate]);
 
   useEffect(() => {
     if (solvedProblems?.length > 0) {

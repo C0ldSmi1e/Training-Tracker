@@ -7,6 +7,11 @@ import { Training } from "@/types/Training";
 import { ProblemTag } from "@/types/Codeforces";
 import useHistory from "@/hooks/useHistory";
 import useUpsolvedProblems from "@/hooks/useUpsolvedProblems";
+import {
+  getProblemId,
+  toSolvedAtMap,
+  SolvedProblem,
+} from "@/utils/codeforces/getSolvedProblems";
 
 const TRAINING_STORAGE_KEY = "training-tracker-training";
 const TRAINING_START_DELAY_MS = 30_000;
@@ -16,6 +21,7 @@ const useTraining = () => {
   const { user, isLoading: isUserLoading, updateUserLevel } = useUser();
   const {
     solvedProblems,
+    solvedAtByProblemId,
     isLoading: isProblemsLoading,
     refreshSolvedProblems,
     getRandomProblems,
@@ -35,50 +41,89 @@ const useTraining = () => {
   const [isTraining, setIsTraining] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout>(undefined);
+  // Guards finishTraining against reentrancy: the timer effect and the
+  // all-solved effect can both call it in the same commit
+  const isFinishingRef = useRef(false);
 
-  const updateProblemStatus = useCallback(() => {
-    const solvedProblemIds = new Set(
-      solvedProblems.map((p) => `${p.contestId}_${p.index}`),
-    );
+  // Stamp problems with the real solve time (earliest accepted submission).
+  // A pre-training AC (stale solved cache, or a problem drawn from the
+  // solved pool) is clamped to the training start so elapsed times and
+  // performance never go negative.
+  const applySolvedTimes = useCallback(
+    (
+      problems: TrainingProblem[],
+      solvedAtMap: Map<string, number>,
+      startTime: number,
+    ) =>
+      problems.map((problem) => {
+        const solvedAt = solvedAtMap.get(getProblemId(problem));
+        return {
+          ...problem,
+          solvedTime:
+            solvedAt !== undefined
+              ? (problem.solvedTime ?? Math.max(solvedAt, startTime))
+              : problem.solvedTime,
+        };
+      }),
+    [],
+  );
 
-    setTraining((prev) => {
-      if (!prev) {
-        return null;
-      }
+  const updateProblemStatus = useCallback(
+    (solvedAtMap: Map<string, number> = solvedAtByProblemId) => {
+      setTraining((prev) => {
+        if (!prev) {
+          return null;
+        }
 
-      const updatedProblems = prev.problems.map((problem) => ({
-        ...problem,
-        solvedTime: solvedProblemIds.has(
-          `${problem.contestId}_${problem.index}`,
-        )
-          ? (problem.solvedTime ?? new Date().getTime())
-          : problem.solvedTime,
-      }));
+        const updatedProblems = applySolvedTimes(
+          prev.problems,
+          solvedAtMap,
+          prev.startTime,
+        );
 
-      // Only update if there are changes
-      if (JSON.stringify(prev.problems) === JSON.stringify(updatedProblems)) {
-        return prev;
-      }
+        // Only update if there are changes
+        if (JSON.stringify(prev.problems) === JSON.stringify(updatedProblems)) {
+          return prev;
+        }
 
-      const updatedTraining = {
-        ...prev,
-        problems: updatedProblems,
-      };
+        const updatedTraining = {
+          ...prev,
+          problems: updatedProblems,
+        };
 
-      localStorage.setItem(
-        TRAINING_STORAGE_KEY,
-        JSON.stringify(updatedTraining),
-      );
-      return updatedTraining;
-    });
-  }, [solvedProblems]);
+        localStorage.setItem(
+          TRAINING_STORAGE_KEY,
+          JSON.stringify(updatedTraining),
+        );
+        return updatedTraining;
+      });
+    },
+    [solvedAtByProblemId, applySolvedTimes],
+  );
 
   const refreshProblemStatus = useCallback(async () => {
-    await refreshSolvedProblems();
-    updateProblemStatus();
+    // Pass the fresh solved data in explicitly — the updateProblemStatus
+    // closure would otherwise still see the pre-refresh solved list
+    let latestSolvedProblems: SolvedProblem[] | undefined;
+    try {
+      latestSolvedProblems = await refreshSolvedProblems();
+    } catch (error) {
+      // Fall back to the last known solved data
+      console.error("Failed to refresh solved problems:", error);
+    }
+    updateProblemStatus(
+      latestSolvedProblems ? toSolvedAtMap(latestSolvedProblems) : undefined,
+    );
   }, [refreshSolvedProblems, updateProblemStatus]);
 
   const finishTraining = useCallback(async () => {
+    // Only let one invocation proceed — checked and set synchronously so
+    // two calls in the same commit can't both write history / update level
+    if (isFinishingRef.current) {
+      return;
+    }
+    isFinishingRef.current = true;
+
     // Immediately set training state to false to prevent any race conditions
     setIsTraining(false);
 
@@ -91,47 +136,85 @@ const useTraining = () => {
     // Capture current training value before clearing state
     const currentTraining = training;
 
-    // Clear all training-related states immediately
+    // Clear in-memory training state immediately, but keep the stored
+    // training in localStorage until the history entry is written so a
+    // failure here can't silently lose the training
     setProblems([]);
     setTraining(null);
-    localStorage.removeItem(TRAINING_STORAGE_KEY);
 
-    // Only proceed with history update if there was an active training
-    if (!currentTraining) {
-      return;
+    try {
+      // Only proceed with history update if there was an active training
+      if (!currentTraining) {
+        localStorage.removeItem(TRAINING_STORAGE_KEY);
+        return;
+      }
+
+      // Discard a corrupted zero-problem training: no history entry,
+      // no level change
+      if (currentTraining.problems.length === 0) {
+        localStorage.removeItem(TRAINING_STORAGE_KEY);
+        return;
+      }
+
+      let historyWritten = false;
+      try {
+        // Refresh the solved list to get the final statuses; on failure fall
+        // back to the last known solved data instead of dropping the training
+        let solvedAtMap = solvedAtByProblemId;
+        try {
+          const latestSolvedProblems = await refreshSolvedProblems();
+          if (latestSolvedProblems) {
+            solvedAtMap = toSolvedAtMap(latestSolvedProblems);
+          }
+        } catch {
+          // Keep the last known solved data
+        }
+
+        const updatedProblems = applySolvedTimes(
+          currentTraining.problems,
+          solvedAtMap,
+          currentTraining.startTime,
+        );
+
+        addTraining({ ...currentTraining, problems: updatedProblems });
+        historyWritten = true;
+
+        // The training is safely in history now — drop the stored training
+        localStorage.removeItem(TRAINING_STORAGE_KEY);
+
+        // if solved all problems, user level +1
+        // otherwise, user level -1
+        const delta =
+          updatedProblems.length > 0 &&
+          updatedProblems.every((p) => p.solvedTime)
+            ? 1
+            : -1;
+        updateUserLevel({ delta });
+
+        // Add unsolved problems to upsolved problems list
+        const unsolvedProblems = updatedProblems.filter((p) => !p.solvedTime);
+        addUpsolvedProblems(unsolvedProblems);
+
+        router.push("/statistics");
+      } catch (error) {
+        // Re-persist the training so it isn't lost — but only if the
+        // history entry was never written, otherwise the restored training
+        // would finish again on the next mount and duplicate the entry
+        if (!historyWritten) {
+          localStorage.setItem(
+            TRAINING_STORAGE_KEY,
+            JSON.stringify(currentTraining),
+          );
+        }
+        console.error("Failed to finish training:", error);
+      }
+    } finally {
+      isFinishingRef.current = false;
     }
-
-    const latestSolvedProblems = await refreshSolvedProblems();
-
-    if (!latestSolvedProblems) {
-      return;
-    }
-
-    const solvedProblemIds = new Set(
-      latestSolvedProblems.map((p) => `${p.contestId}_${p.index}`),
-    );
-
-    const updatedProblems = currentTraining.problems.map((problem) => ({
-      ...problem,
-      solvedTime: solvedProblemIds.has(`${problem.contestId}_${problem.index}`)
-        ? (problem.solvedTime ?? new Date().getTime())
-        : problem.solvedTime,
-    }));
-
-    addTraining({ ...currentTraining, problems: updatedProblems });
-
-    // if solved all problems, user level +1
-    // otherwise, user level -1
-    const delta = updatedProblems.every((p) => p.solvedTime) ? 1 : -1;
-    updateUserLevel({ delta });
-
-    // Add unsolved problems to upsolved problems list
-    const unsolvedProblems = updatedProblems.filter((p) => !p.solvedTime);
-    addUpsolvedProblems(unsolvedProblems);
-
-    router.push("/statistics");
   }, [
     training,
+    solvedAtByProblemId,
+    applySolvedTimes,
     addTraining,
     router,
     refreshSolvedProblems,
@@ -147,8 +230,6 @@ const useTraining = () => {
   }, [user, isUserLoading, router]);
 
   // Manage training timer and localStorage sync
-  // These effects legitimately call setState in response to timer/external state changes
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!training) {
       if (timerRef.current) {
@@ -197,7 +278,6 @@ const useTraining = () => {
     }
     updateProblemStatus();
   }, [isTraining, training, solvedProblems, updateProblemStatus]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const startTraining = () => {
     if (!user) {
