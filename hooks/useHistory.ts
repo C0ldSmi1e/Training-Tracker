@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import useUser from "@/hooks/useUser";
 import { Training } from "@/types/Training";
@@ -18,6 +18,11 @@ const useHistory = () => {
     }
   });
 
+  // Always-current history, so writes derive from the latest value (not the
+  // render-time `history`) and persist synchronously — callers rely on the
+  // localStorage write having happened when addTraining returns
+  const historyRef = useRef(history);
+
   // Redirect if no user
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -25,30 +30,28 @@ const useHistory = () => {
     }
   }, [user, isUserLoading, router]);
 
+  const persistHistory = (newHistory: Training[]) => {
+    historyRef.current = newHistory;
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(newHistory));
+    setHistory(newHistory);
+  };
+
   const addTraining = (training: Training) => {
     const performance = getPerformance(training);
 
     const newTraining = { ...training, performance };
 
-    setHistory((prev) => [...prev, newTraining]);
-
-    localStorage.setItem(
-      HISTORY_STORAGE_KEY,
-      JSON.stringify([...history, newTraining]),
-    );
+    persistHistory([...historyRef.current, newTraining]);
   };
 
   const deleteTraining = (training: Training) => {
-    setHistory((prev) =>
-      prev.filter((t) => t.startTime !== training.startTime),
-    );
-    localStorage.setItem(
-      HISTORY_STORAGE_KEY,
-      JSON.stringify(history.filter((t) => t.startTime !== training.startTime)),
+    persistHistory(
+      historyRef.current.filter((t) => t.startTime !== training.startTime),
     );
   };
 
   const clearHistory = () => {
+    historyRef.current = [];
     setHistory([]);
     localStorage.removeItem(HISTORY_STORAGE_KEY);
   };

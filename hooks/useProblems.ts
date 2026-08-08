@@ -2,7 +2,10 @@ import { useState, useMemo } from "react";
 import useSWR from "swr";
 import { CodeforcesProblem, ProblemTag } from "@/types/Codeforces";
 import getAllProblems from "@/utils/codeforces/getAllProblems";
-import getSolvedProblems from "@/utils/codeforces/getSolvedProblems";
+import getSolvedProblems, {
+  SolvedProblem,
+  toSolvedAtMap,
+} from "@/utils/codeforces/getSolvedProblems";
 import { User } from "@/types/User";
 
 const PROBLEMS_CACHE_KEY = "codeforces-all-problems";
@@ -31,12 +34,12 @@ const useProblems = (user: User | null | undefined) => {
     },
   );
 
-  // Fetch solved problems only if we have a user
+  // Fetch solved problems (with solved timestamps) only if we have a user
   const {
-    data: solvedProblems,
+    data: solvedProblemsData,
     isLoading: isLoadingSolved,
     mutate: mutateSolved,
-  } = useSWR<CodeforcesProblem[]>(
+  } = useSWR<SolvedProblem[]>(
     user ? SOLVED_PROBLEMS_CACHE_KEY(user.codeforcesHandle) : null,
     async () => {
       if (!user) {
@@ -52,6 +55,19 @@ const useProblems = (user: User | null | undefined) => {
       revalidateOnFocus: false,
       dedupingInterval: 300000,
     },
+  );
+
+  // Keep the plain problem array shape for existing consumers
+  const solvedProblems = useMemo(
+    () => solvedProblemsData?.map((s) => s.problem),
+    [solvedProblemsData],
+  );
+
+  // Map from `${contestId}_${index}` to the earliest accepted submission
+  // time in milliseconds
+  const solvedAtByProblemId = useMemo(
+    () => toSolvedAtMap(solvedProblemsData ?? []),
+    [solvedProblemsData],
   );
 
   // Derive problem pools from data
@@ -206,6 +222,7 @@ const useProblems = (user: User | null | undefined) => {
   return {
     allProblems: allProblems ?? [],
     solvedProblems: solvedProblems ?? [],
+    solvedAtByProblemId,
     isLoading: isLoading || isLoadingAll || isLoadingSolved,
 
     refreshSolvedProblems,
