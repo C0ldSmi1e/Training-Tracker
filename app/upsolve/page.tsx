@@ -5,6 +5,7 @@ import useUpsolvedProblems from "@/hooks/useUpsolvedProblems";
 import Loader from "@/components/Loader";
 import Error from "@/components/Error";
 import UpsolvedProblemsList from "@/components/UpsolvedProblemsList";
+import { Card } from "@/components/ui/card";
 
 const Upsolve = () => {
   const {
@@ -30,17 +31,24 @@ const Upsolve = () => {
   };
 
   if (!upsolvedProblems || upsolvedProblems.length === 0) {
-    return <div>No problems to upsolve.</div>;
+    return (
+      <div className="flex flex-col gap-4">
+        <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-tight">
+          Upsolve
+        </h1>
+        <Card className="px-6 py-12 text-center text-muted-foreground">
+          No problems to upsolve.
+        </Card>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <UpsolvedProblemsList
-        upsolvedProblems={upsolvedProblems}
-        onDelete={onDelete}
-        onRefresh={onRefreshUpsolvedProblems}
-      />
-    </div>
+    <UpsolvedProblemsList
+      upsolvedProblems={upsolvedProblems}
+      onDelete={onDelete}
+      onRefresh={onRefreshUpsolvedProblems}
+    />
   );
 };
 

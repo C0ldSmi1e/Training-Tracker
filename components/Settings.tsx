@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import useUser from "@/hooks/useUser";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -36,26 +37,30 @@ const Settings = () => {
   };
 
   return (
-    <div className="flex flex-col items-start justify-center gap-4">
-      <div className="flex flex-col md:flex-row items-center justify-center gap-4 w-full">
+    <Card className="p-6">
+      <label htmlFor="codeforces-handle" className="font-semibold">
+        Codeforces handle
+      </label>
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row">
         <Input
+          id="codeforces-handle"
           type="text"
-          className="w-full md:w-2/3"
+          className="sm:flex-1"
           value={codeforcesHandle}
           onChange={onChangeCodeforcesHandle}
           onKeyDown={onKeyDown}
           placeholder="Please enter your Codeforces handle"
         />
-        <Button
-          className="w-full md:w-1/3"
-          onClick={onUpdateUser}
-          disabled={isUpdating}
-        >
+        <Button onClick={onUpdateUser} disabled={isUpdating}>
           {isUpdating ? "Updating..." : "Update"}
         </Button>
       </div>
-      {errorMessage && <div className="text-red-500">{errorMessage}</div>}
-    </div>
+      {errorMessage && (
+        <p role="alert" className="mt-3 text-sm text-destructive">
+          {errorMessage}
+        </p>
+      )}
+    </Card>
   );
 };
 

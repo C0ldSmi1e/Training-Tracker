@@ -9,43 +9,53 @@ interface TextboxpairProps extends React.HTMLAttributes<HTMLDivElement> {
   onSecondInputChange: (e: string) => void;
 }
 
-const Textboxpair = React.forwardRef<HTMLDivElement, TextboxpairProps>((props, ref) => {
-  // Destructure the event handlers and other props separately
-  const { onFirstInputChange, onSecondInputChange, ...otherProps } = props;
+const Textboxpair = React.forwardRef<HTMLDivElement, TextboxpairProps>(
+  ({ onFirstInputChange, onSecondInputChange, className, ...props }, ref) => {
+    const id = React.useId()
 
-  return (
-      <div ref={ref} className="flex gap-1" {...otherProps}>
-        <Modded_input
-          type="text"
-          placeholder="Oldest Round"
-          onChange={(e) => onFirstInputChange(e.target.value)}
-        />
-        <Modded_input
-          type="text"
-          placeholder="Newest Round"
-          onChange={(e) => onSecondInputChange(e.target.value)}
-        />
-      </div>
-  )
-})
-Textboxpair.displayName = "Textboxpair"
-
-const Modded_input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, onChange, ...props }, ref) => {
     return (
-      <input
-        type={type}
-        className={cn(
-          "flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-          className
-        )}
-        onChange={onChange}
+      <div
         ref={ref}
+        className={cn("flex items-end gap-3", className)}
         {...props}
-      />
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-1 sm:w-[150px] sm:flex-none">
+          <label
+            htmlFor={`${id}-oldest`}
+            className="text-[13px] text-muted-foreground"
+          >
+            Oldest round
+          </label>
+          <Input
+            id={`${id}-oldest`}
+            type="text"
+            inputMode="numeric"
+            placeholder="1"
+            className="font-mono"
+            onChange={(e) => onFirstInputChange(e.target.value)}
+          />
+        </div>
+        <span className="pb-2.5 text-muted-foreground">to</span>
+        <div className="flex min-w-0 flex-1 flex-col gap-1 sm:w-[150px] sm:flex-none">
+          <label
+            htmlFor={`${id}-newest`}
+            className="text-[13px] text-muted-foreground"
+          >
+            Newest round
+          </label>
+          <Input
+            id={`${id}-newest`}
+            type="text"
+            inputMode="numeric"
+            placeholder="Latest"
+            className="font-mono"
+            onChange={(e) => onSecondInputChange(e.target.value)}
+          />
+        </div>
+      </div>
     )
   }
 )
-Modded_input.displayName = "Modded_input"
+Textboxpair.displayName = "Textboxpair"
 
 export { Textboxpair }
