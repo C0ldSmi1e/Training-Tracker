@@ -5,13 +5,14 @@ import Loader from "@/components/Loader";
 import History from "@/components/History";
 import ProgressChart from "@/components/ProgressChart";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
 
 const Statistics = () => {
   const { history, isLoading, deleteTraining, clearHistory } = useHistory();
@@ -41,15 +42,20 @@ const Statistics = () => {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-2xl font-bold">Statistics</CardTitle>
-        <div className="flex gap-2">
+    <div className="flex flex-col gap-4">
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h1 className="text-[28px] font-semibold leading-tight tracking-tight">
+          Statistics
+        </h1>
+        <div className="flex gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline">Export</Button>
+              <Button variant="outline" className="pl-[18px] pr-3.5">
+                Export
+                <ChevronDown />
+              </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent align="end">
               <DropdownMenuItem
                 disabled={!history || history.length === 0}
                 onClick={onExportJson}
@@ -64,22 +70,18 @@ const Statistics = () => {
             Clear
           </Button>
         </div>
-      </CardHeader>
-      <CardContent>
-        {history && history.length > 0 ? (
-          <>
-            <div className="w-full mb-6">
-              <ProgressChart history={history} />
-            </div>
-            <History history={history} deleteTraining={deleteTraining} />
-          </>
-        ) : (
-          <div className="text-center py-4 text-muted-foreground">
-            No training history
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+      {history && history.length > 0 ? (
+        <>
+          <ProgressChart history={history} />
+          <History history={history} deleteTraining={deleteTraining} />
+        </>
+      ) : (
+        <Card className="px-6 py-12 text-center text-muted-foreground">
+          No training history
+        </Card>
+      )}
+    </div>
   );
 };
 

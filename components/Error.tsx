@@ -10,11 +10,11 @@ import {
 
 const Error = () => {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex min-h-[50vh] items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="flex items-center justify-center text-3xl font-bold text-destructive">
-            <AlertTriangle className="w-12 h-12 mr-2" />
+          <CardTitle className="flex items-center justify-center gap-2 text-destructive">
+            <AlertTriangle className="size-6" />
             Error
           </CardTitle>
         </CardHeader>

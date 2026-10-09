@@ -19,11 +19,11 @@ const GlobalError = ({
   reset: () => void;
 }) => {
   return (
-    <div className="flex items-center justify-center p-4">
+    <div className="flex min-h-[50vh] items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="flex items-center justify-center text-2xl font-bold">
-            <AlertTriangle className="w-8 h-8 mr-2 text-destructive" />
+          <CardTitle className="flex items-center justify-center gap-2">
+            <AlertTriangle className="size-6 text-destructive" />
             Something went wrong
           </CardTitle>
         </CardHeader>
@@ -32,7 +32,7 @@ const GlobalError = ({
             {error.message || "An unexpected error occurred."}
           </p>
         </CardContent>
-        <CardFooter className="flex justify-center gap-4">
+        <CardFooter className="flex justify-center gap-3">
           <Button onClick={reset}>Try Again</Button>
           <Button variant="outline" asChild>
             <Link href="/">Return Home</Link>

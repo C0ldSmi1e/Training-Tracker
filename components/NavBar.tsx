@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import useSWR from "swr";
 import ModeToggle from "@/components/ModeToggle";
-import { Menu } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User } from "@/types/User";
+import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/", label: "Home" },
@@ -16,60 +17,60 @@ const links = [
 
 const NavBar = () => {
   const pathname = usePathname();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // Read the user from the SWR cache that useUser fills (same key) instead of
+  // calling useUser here, which would fire one more Codeforces request
+  const { data: user } = useSWR<User | null>("codeforces-user");
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <Link href="/" className="text-xl font-bold">
-            Training Tracker
-          </Link>
-          <div className="hidden sm:flex items-center space-x-4">
-            {links.map((link) => (
-              <Button
-                key={link.href}
-                variant={pathname === link.href ? "default" : "ghost"}
-                asChild
-              >
-                <Link href={link.href}>{link.label}</Link>
-              </Button>
-            ))}
-            <ModeToggle />
-          </div>
-          <div className="sm:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+    <header className="grid grid-cols-[1fr_auto] items-center gap-x-6 gap-y-2 py-3.5 sm:grid-cols-[1fr_auto_1fr]">
+      <Link
+        href="/"
+        className="flex min-h-11 items-center gap-2.5 justify-self-start text-base font-semibold tracking-tight"
+      >
+        <span
+          aria-hidden="true"
+          className="size-[18px] rounded-full border-[5px] border-primary"
+        />
+        Training Tracker
+      </Link>
+      <nav
+        aria-label="Main"
+        className="order-last col-span-2 flex gap-1 sm:order-none sm:col-span-1"
+      >
+        {links.map((link) => {
+          const isActive = pathname === link.href;
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              aria-current={isActive ? "page" : undefined}
+              className={cn(
+                "flex min-h-11 flex-1 items-center justify-center rounded-full px-3.5 transition-colors sm:flex-none",
+                isActive
+                  ? "bg-card font-semibold text-foreground shadow-[inset_0_0_0_1px_hsl(var(--border))]"
+                  : "font-medium text-foreground-soft hover:text-foreground",
+              )}
             >
-              <Menu className="h-6 w-6" />
-              <span className="sr-only">Toggle menu</span>
-            </Button>
-          </div>
-        </div>
-        {isMenuOpen && (
-          <div className="sm:hidden">
-            <div className="pt-2 pb-4 space-y-2">
-              {links.map((link) => (
-                <Button
-                  key={link.href}
-                  variant={pathname === link.href ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  asChild
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <Link href={link.href}>{link.label}</Link>
-                </Button>
-              ))}
-              <div className="pt-2">
-                <ModeToggle />
-              </div>
-            </div>
+              {link.label}
+            </Link>
+          );
+        })}
+      </nav>
+      <div className="flex items-center gap-2 justify-self-end">
+        <ModeToggle />
+        {user && (
+          <div className="flex items-center gap-2.5">
+            <Avatar className="size-9">
+              <AvatarImage src={user.avatar} alt="" />
+              <AvatarFallback className="bg-foreground text-[13px] font-semibold text-background">
+                {user.codeforcesHandle.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-sm font-medium">{user.codeforcesHandle}</span>
           </div>
         )}
       </div>
-    </nav>
+    </header>
   );
 };
 

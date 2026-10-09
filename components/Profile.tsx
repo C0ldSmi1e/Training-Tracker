@@ -5,9 +5,9 @@ import { useState } from "react";
 import { User } from "@/types/User";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Response } from "@/types/Response";
-import { LucideEdit } from "lucide-react";
 
 const Profile = ({
   user,
@@ -31,50 +31,78 @@ const Profile = ({
     setIsLoading(false);
   };
 
+  const onCancel = () => {
+    setNewLevelNumber(+user?.level.level);
+    setIsEditing(false);
+  };
+
   return (
-    <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-      <Avatar className="w-24 h-24 md:w-40 md:h-40">
-        <AvatarImage src={user?.avatar || "/default-avatar.jpg"} alt="avatar" />
-        <AvatarFallback>
+    <Card className="flex flex-wrap items-center gap-x-6 gap-y-4 p-6">
+      <Avatar className="size-[72px]">
+        <AvatarImage
+          src={user?.avatar || "/images/default-avatar.jpg"}
+          alt="avatar"
+        />
+        <AvatarFallback className="bg-foreground text-2xl font-semibold text-background">
           {user?.codeforcesHandle?.slice(0, 2).toUpperCase()}
         </AvatarFallback>
       </Avatar>
-      <div className="flex flex-col items-center md:items-start justify-center gap-2">
-        <div className="text-lg">
-          <span className="font-bold">Username:</span> {user?.codeforcesHandle}
-        </div>
-        <div>
-          <span className="font-bold">Rating:</span> {user?.rating}
-        </div>
-        <div>
-          {isEditing ? (
-            <div className="flex items-center gap-2">
-              <span className="font-bold">Level:</span>
-              <Input
-                className="w-20"
-                type="number"
-                value={newLevelNumber}
-                onChange={(e) => setNewLevelNumber(parseInt(e.target.value))}
-              />
-              <Button onClick={onSave} disabled={isLoading}>
-                {isLoading ? "Saving..." : "Save"}
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <span className="font-bold">Level:</span> {user?.level.level}
-              <LucideEdit
-                className="w-4 h-4 cursor-pointer"
-                onClick={() => setIsEditing(true)}
-              />
-            </div>
-          )}
-        </div>
-        <Button onClick={logout} variant="outline" className="mt-2">
-          Logout
-        </Button>
+      <div className="min-w-0 flex-[1_1_200px]">
+        <h1 className="truncate text-2xl font-semibold tracking-tight">
+          {user?.codeforcesHandle}
+        </h1>
+        <p className="text-foreground-soft">
+          Codeforces rating{" "}
+          <span className="font-mono text-sm font-medium text-foreground">
+            {user?.rating}
+          </span>
+        </p>
       </div>
-    </div>
+      <div className="flex items-center gap-2 rounded-md bg-muted py-2 pl-[18px] pr-1.5">
+        {isEditing ? (
+          <>
+            <label
+              htmlFor="level"
+              className="text-[13px] text-muted-foreground"
+            >
+              Level
+            </label>
+            <Input
+              id="level"
+              className="w-20 font-mono"
+              type="number"
+              value={Number.isNaN(newLevelNumber) ? "" : newLevelNumber}
+              onChange={(e) => setNewLevelNumber(parseInt(e.target.value))}
+            />
+            <Button onClick={onSave} disabled={isLoading}>
+              {isLoading ? "Saving..." : "Save"}
+            </Button>
+            <Button variant="link" className="px-3" onClick={onCancel}>
+              Cancel
+            </Button>
+          </>
+        ) : (
+          <>
+            <div>
+              <div className="text-[13px] text-muted-foreground">Level</div>
+              <div className="font-mono text-[22px] font-medium leading-tight tracking-tight">
+                {user?.level.level}
+              </div>
+            </div>
+            <Button
+              variant="link"
+              className="px-3"
+              onClick={() => setIsEditing(true)}
+            >
+              Edit
+            </Button>
+          </>
+        )}
+      </div>
+      <Button onClick={logout} variant="outline">
+        Log out
+      </Button>
+    </Card>
   );
 };
 

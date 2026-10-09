@@ -11,11 +11,11 @@ import { FileQuestion } from "lucide-react";
 
 const NotFound = () => {
   return (
-    <div className="flex items-center justify-center bg-background">
-      <Card className="w-full max-w-md mt-10">
+    <div className="flex min-h-[50vh] items-center justify-center">
+      <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="flex items-center justify-center text-3xl font-bold">
-            <FileQuestion className="w-12 h-12 mr-2 text-primary" />
+          <CardTitle className="flex items-center justify-center gap-2">
+            <FileQuestion className="size-6 text-link" />
             Not Found
           </CardTitle>
         </CardHeader>
